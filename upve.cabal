@@ -1,0 +1,26 @@
+name:                upve
+version:             0.1
+synopsis:            Haskell Proxmox (PVE) Library
+-- description:        
+homepage:            https://github.com/Ulrar/uPVE
+license:             Beerware
+license-file:        LICENSE
+author:              Kevin Lemonnier
+maintainer:          lemonnierk@ulrar.net
+-- copyright:           
+category:            Web
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+
+library
+  exposed-modules:     Web.UPVE, Web.UPVE.Types
+  default-extensions:  OverloadedStrings
+  build-depends:       base >=4.8 && <4.9,
+                       text,
+                       bytestring,
+                       http-conduit,
+                       HTTP,
+                       aeson
+  hs-source-dirs:      .
+  default-language:    Haskell2010
