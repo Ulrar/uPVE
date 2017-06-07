@@ -1,4 +1,7 @@
-module Web.UPVE (login, getVMList) where
+module Web.UPVE (login
+                , getVMList
+                , getStorageList
+                ) where
 
 import                  Web.UPVE.Types
 
@@ -64,3 +67,20 @@ getVMList pve = do
   case getResponseBody response of
     Left  err -> return $ Left err
     Right l   -> return $ Right (vml l)
+
+--
+-- Storage
+--
+
+getStorageList :: PVEServer -> IO (Either JSONException [Storage])
+getStorageList pve = do
+  let request = setRequestHost    (host pve)
+              $ setRequestPort    (port pve)
+              $ setRequestPath    "/api2/json/cluster/resources?type=storage"
+              $ setRequestMethod  "GET"
+              $ setRequestSecure  True
+              $ defaultRequest
+  response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
+  case getResponseBody response of
+    Left  err -> return $ Left err
+    Right l   -> return $ Right (sl l)

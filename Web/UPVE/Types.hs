@@ -1,11 +1,19 @@
-module Web.UPVE.Types (Credentials(..), PVEServer(..), VM(..), VMList(..)) where
+module Web.UPVE.Types (Credentials(..)
+                      , PVEServer(..)
+                      , VM(..)
+                      , VMList(..)
+                      , Storage(..)
+                      , StorageList(..)
+                      ) where
 
 import                  Data.Text
 import                  Data.Aeson
 import qualified        Data.ByteString.Internal      as BI
 
-
+--
 -- Authentication
+--
+
 data Credentials = Credentials {ticket :: Text, token :: Text } deriving Show
 
 instance FromJSON Credentials where
@@ -15,24 +23,26 @@ instance FromJSON Credentials where
 
 data PVEServer = PVEServer {host :: BI.ByteString, port :: Int, credentials :: Credentials} deriving Show
 
+--
 -- VMs
+--
 
-data VMStatus = Running | Stopped | Suspended deriving Show
+data Status = Running | Stopped | Suspended deriving Show
 
-data VM = VM { name     :: Text
-             , node     :: Text
-             , id       :: Text
-             , vmid     :: Int
-             , template :: Bool
-             , mem      :: Int
-             , maxmem   :: Int
-             , disk     :: Int
-             , maxdisk  :: Int
-             , cpu      :: Float
-             , maxcpu   :: Int
-             , netin    :: Float
-             , netout   :: Float
-             , status   :: VMStatus
+data VM = VM { vmName     :: Text
+             , vmNode     :: Text
+             , vmId       :: Text
+             , vmNId      :: Int
+             , vmTemplate :: Bool
+             , vmMem      :: Int
+             , vmMaxmem   :: Int
+             , vmDisk     :: Int
+             , vmMaxdisk  :: Int
+             , vmCpu      :: Float
+             , vmMaxcpu   :: Int
+             , vmNetin    :: Float
+             , vmNetout   :: Float
+             , vmStatus   :: Status
              } deriving Show
 
 instance FromJSON VM where
@@ -62,8 +72,33 @@ instance FromJSON VM where
           "suspended" -> return Suspended
         )
 
-data VMList = RessourceVM { vml :: [VM] }
+data VMList = VMList { vml :: [VM] }
 
 instance FromJSON VMList where
-  parseJSON = withObject "RessourceVM" $ \v -> RessourceVM
+  parseJSON = withObject "VMList" $ \v -> VMList
+    <$> v .: "data"
+
+--
+-- Storage
+--
+
+data Storage = Storage { storageId     :: Text
+                       , storageName   :: Text
+                       , storageNode   :: Text
+                       , storageSize   :: Int
+                       , storageUsed   :: Int
+                       } deriving Show
+
+instance FromJSON Storage where
+  parseJSON = withObject "Storage" $ \v -> Storage
+    <$> v .: "id"
+    <*> v .: "storage"
+    <*> v .: "node"
+    <*> v .: "maxdisk"
+    <*> v .: "disk"
+
+data StorageList = StorageList { sl :: [Storage] }
+
+instance FromJSON StorageList where
+  parseJSON = withObject "StorageList" $ \v -> StorageList
     <$> v .: "data"
