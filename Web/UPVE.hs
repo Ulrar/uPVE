@@ -1,14 +1,23 @@
-module Web.UPVE (login) where
+module Web.UPVE (login, getVMList) where
 
 import                  Web.UPVE.Types
 
+import Data.Time.Clock
+import Data.Time.Calendar
+
 import                  Network.HTTP.Simple
+import                  Network.HTTP.Conduit          (Cookie(..), createCookieJar, Request(cookieJar))
 import                  Network.HTTP.Base             (urlEncodeVars)
 import qualified        Data.Text                     as T
+import qualified        Data.ByteString.Char8         as B
 import qualified        Data.ByteString.Internal      as BI
 import qualified        Data.ByteString.Lazy.Char8    as Char8
 
-login :: BI.ByteString -> Int -> String -> String -> IO (Either JSONException (BI.ByteString, Int, Credentials))
+--
+-- Auth
+--
+
+login :: BI.ByteString -> Int -> String -> String -> IO (Either JSONException PVEServer)
 login host port username password = do
   let request = setRequestHost    host
               $ setRequestPort    port
@@ -20,4 +29,38 @@ login host port username password = do
   response <- httpJSONEither request
   case getResponseBody response of
     Left  err -> return $ Left err
-    Right c   -> return $ Right (host, port, c)
+    Right c   -> return $ Right (PVEServer {host = host, port = port, credentials = c})
+
+-- FIXME: Do that, but clean
+mkAuthCookie pve = do
+  let future = UTCTime (ModifiedJulianDay 562000) (secondsToDiffTime 0)
+  let past = UTCTime (ModifiedJulianDay 56200) (secondsToDiffTime 0)
+  Just $ createCookieJar [Cookie { cookie_name = "PVEAuthCookie"
+                                 , cookie_value = B.pack $ T.unpack $ ticket $ credentials pve
+                                 , cookie_expiry_time = future
+                                 , cookie_domain = host pve
+                                 , cookie_path = "/"
+                                 , cookie_creation_time = past
+                                 , cookie_last_access_time = past
+                                 , cookie_persistent = False
+                                 , cookie_host_only = True
+                                 , cookie_secure_only = True
+                                 , cookie_http_only = False
+                                 }]
+
+--
+-- VMs
+--
+
+getVMList :: PVEServer -> IO (Either JSONException [VM])
+getVMList pve = do
+  let request = setRequestHost    (host pve)
+              $ setRequestPort    (port pve)
+              $ setRequestPath    "/api2/json/cluster/resources?type=vm"
+              $ setRequestMethod  "GET"
+              $ setRequestSecure  True
+              $ defaultRequest
+  response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
+  case getResponseBody response of
+    Left  err -> return $ Left err
+    Right l   -> return $ Right (vml l)
