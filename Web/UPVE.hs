@@ -1,6 +1,8 @@
 module Web.UPVE (login
                 , getVMList
                 , getStorageList
+                , start
+                , stop
                 ) where
 
 import                  Web.UPVE.Types
@@ -38,18 +40,19 @@ login host port username password = do
 mkAuthCookie pve = do
   let future = UTCTime (ModifiedJulianDay 562000) (secondsToDiffTime 0)
   let past = UTCTime (ModifiedJulianDay 56200) (secondsToDiffTime 0)
-  Just $ createCookieJar [Cookie { cookie_name = "PVEAuthCookie"
-                                 , cookie_value = B.pack $ T.unpack $ ticket $ credentials pve
-                                 , cookie_expiry_time = future
-                                 , cookie_domain = host pve
-                                 , cookie_path = "/"
-                                 , cookie_creation_time = past
-                                 , cookie_last_access_time = past
-                                 , cookie_persistent = False
-                                 , cookie_host_only = True
-                                 , cookie_secure_only = True
-                                 , cookie_http_only = False
-                                 }]
+  let tc = Cookie { cookie_name = "PVEAuthCookie"
+                  , cookie_value = B.pack $ T.unpack $ ticket $ credentials pve
+                  , cookie_expiry_time = future
+                  , cookie_domain = host pve
+                  , cookie_path = "/"
+                  , cookie_creation_time = past
+                  , cookie_last_access_time = past
+                  , cookie_persistent = False
+                  , cookie_host_only = True
+                  , cookie_secure_only = True
+                  , cookie_http_only = False
+                  }
+  Just $ createCookieJar [tc]
 
 --
 -- VMs
@@ -84,3 +87,31 @@ getStorageList pve = do
   case getResponseBody response of
     Left  err -> return $ Left err
     Right l   -> return $ Right (sl l)
+
+--
+-- Status
+--
+
+start :: PVEServer -> Int -> IO (Bool)
+start pve id = do
+  let request = setRequestHost    (host pve)
+              $ setRequestPort    (port pve)
+              $ setRequestPath    (B.pack ("/api2/json/nodes/s1/qemu/" ++ (show id) ++ "/status/start"))
+              $ setRequestMethod  "POST"
+              $ setRequestHeader  "CSRFPreventionToken" [B.pack $ T.unpack $ token $ credentials pve]
+              $ setRequestSecure  True
+              $ defaultRequest
+  response <- httpLBS (request {cookieJar = mkAuthCookie pve})
+  return True
+
+stop :: PVEServer -> Int -> IO (Bool)
+stop pve id = do
+  let request = setRequestHost    (host pve)
+              $ setRequestPort    (port pve)
+              $ setRequestPath    (B.pack ("/api2/json/nodes/s1/qemu/" ++ (show id) ++ "/status/stop"))
+              $ setRequestMethod  "POST"
+              $ setRequestHeader  "CSRFPreventionToken" [B.pack $ T.unpack $ token $ credentials pve]
+              $ setRequestSecure  True
+              $ defaultRequest
+  response <- httpLBS (request {cookieJar = mkAuthCookie pve})
+  return True
