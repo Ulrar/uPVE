@@ -4,6 +4,7 @@ module Web.UPVE.Types (Credentials(..)
                       , VMList(..)
                       , Storage(..)
                       , StorageList(..)
+                      , Action(..)
                       ) where
 
 import                  Data.Text
@@ -102,3 +103,14 @@ data StorageList = StorageList { sl :: [Storage] }
 instance FromJSON StorageList where
   parseJSON = withObject "StorageList" $ \v -> StorageList
     <$> v .: "data"
+
+--
+-- Misc
+--
+
+data Action = Start | Stop | Restart
+
+instance Show Action where
+  show Start   = "start"
+  show Stop    = "stop"
+  show Restart = "restart"

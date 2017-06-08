@@ -1,8 +1,7 @@
 module Web.UPVE (login
                 , getVMList
                 , getStorageList
-                , start
-                , stop
+                , changeStatus
                 ) where
 
 import                  Web.UPVE.Types
@@ -92,23 +91,11 @@ getStorageList pve = do
 -- Status
 --
 
-start :: PVEServer -> Int -> IO (Bool)
-start pve id = do
+changeStatus :: PVEServer -> Int -> Action -> IO (Bool)
+changeStatus pve id action = do
   let request = setRequestHost    (host pve)
               $ setRequestPort    (port pve)
-              $ setRequestPath    (B.pack ("/api2/json/nodes/s1/qemu/" ++ (show id) ++ "/status/start"))
-              $ setRequestMethod  "POST"
-              $ setRequestHeader  "CSRFPreventionToken" [B.pack $ T.unpack $ token $ credentials pve]
-              $ setRequestSecure  True
-              $ defaultRequest
-  response <- httpLBS (request {cookieJar = mkAuthCookie pve})
-  return True
-
-stop :: PVEServer -> Int -> IO (Bool)
-stop pve id = do
-  let request = setRequestHost    (host pve)
-              $ setRequestPort    (port pve)
-              $ setRequestPath    (B.pack ("/api2/json/nodes/s1/qemu/" ++ (show id) ++ "/status/stop"))
+              $ setRequestPath    (B.pack ("/api2/json/nodes/s1/qemu/" ++ (show id) ++ "/status/" ++ (show action)))
               $ setRequestMethod  "POST"
               $ setRequestHeader  "CSRFPreventionToken" [B.pack $ T.unpack $ token $ credentials pve]
               $ setRequestSecure  True
