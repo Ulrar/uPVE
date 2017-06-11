@@ -5,6 +5,7 @@ module Web.UPVE (login
                 ) where
 
 import                  Web.UPVE.Types
+import                  Web.UPVE.Internal
 
 import Data.Time.Clock
 import Data.Time.Calendar
@@ -12,6 +13,7 @@ import Data.Time.Calendar
 import                  Network.HTTP.Simple
 import                  Network.HTTP.Conduit          (Cookie(..), createCookieJar, Request(cookieJar))
 import                  Network.HTTP.Base             (urlEncodeVars)
+import                  Data.Aeson                    (FromJSON)
 import qualified        Data.Text                     as T
 import qualified        Data.ByteString.Char8         as B
 import qualified        Data.ByteString.Internal      as BI
@@ -54,38 +56,27 @@ mkAuthCookie pve = do
   Just $ createCookieJar [tc]
 
 --
--- VMs
+-- Ressources
 --
+
+getRessources :: (FromJSON a, FromJSON b) => PVEServer -> String -> (a -> [b]) -> IO (Either JSONException [b])
+getRessources pve t u = do
+  let request = setRequestHost    (host pve)
+              $ setRequestPort    (port pve)
+              $ setRequestPath    (B.pack $ "/api2/json/cluster/resources?type=" ++ t)
+              $ setRequestMethod  "GET"
+              $ setRequestSecure  True
+              $ defaultRequest
+  response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
+  case getResponseBody response of
+    Left  err -> return $ Left err
+    Right l   -> return $ Right (u l)
 
 getVMList :: PVEServer -> IO (Either JSONException [VM])
-getVMList pve = do
-  let request = setRequestHost    (host pve)
-              $ setRequestPort    (port pve)
-              $ setRequestPath    "/api2/json/cluster/resources?type=vm"
-              $ setRequestMethod  "GET"
-              $ setRequestSecure  True
-              $ defaultRequest
-  response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
-  case getResponseBody response of
-    Left  err -> return $ Left err
-    Right l   -> return $ Right (vml l)
-
---
--- Storage
---
+getVMList pve = getRessources pve "vm" vml
 
 getStorageList :: PVEServer -> IO (Either JSONException [Storage])
-getStorageList pve = do
-  let request = setRequestHost    (host pve)
-              $ setRequestPort    (port pve)
-              $ setRequestPath    "/api2/json/cluster/resources?type=storage"
-              $ setRequestMethod  "GET"
-              $ setRequestSecure  True
-              $ defaultRequest
-  response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
-  case getResponseBody response of
-    Left  err -> return $ Left err
-    Right l   -> return $ Right (sl l)
+getStorageList pve = getRessources pve "storage" sl
 
 --
 -- Status

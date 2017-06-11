@@ -1,9 +1,7 @@
-module Web.UPVE.Types (Credentials(..)
+module Web.UPVE.Types ( Credentials(..)
                       , PVEServer(..)
                       , VM(..)
-                      , VMList(..)
                       , Storage(..)
-                      , StorageList(..)
                       , Action(..)
                       ) where
 
@@ -72,12 +70,6 @@ instance FromJSON VM where
           "stopped"   -> return Stopped
           "suspended" -> return Suspended
         )
-
-data VMList = VMList { vml :: [VM] }
-
-instance FromJSON VMList where
-  parseJSON = withObject "VMList" $ \v -> VMList
-    <$> v .: "data"
 
 --
 -- Storage
