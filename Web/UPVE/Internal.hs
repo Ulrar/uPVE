@@ -1,8 +1,9 @@
-module Web.UPVE.Internal ( VMList(..)
-                         , StorageList(..)
+module Web.UPVE.Internal ( VMRList(..)
+                         , StorageRList(..)
                          ) where
 
 import                  Web.UPVE.Types
+import qualified        Web.UPVE.Resources as R
 
 import                  Data.Text
 import                  Data.Aeson
@@ -11,14 +12,14 @@ import                  Data.Aeson
 -- Ressources
 --
 
-data VMList = VMList { vml :: [VM] }
+data VMRList = VMRList { vml :: [R.VM] }
 
-instance FromJSON VMList where
-  parseJSON = withObject "VMList" $ \v -> VMList
+instance FromJSON VMRList where
+  parseJSON = withObject "VMRList" $ \v -> VMRList
     <$> v .: "data"
 
-data StorageList = StorageList { sl :: [Storage] }
+data StorageRList = StorageRList { sl :: [R.Storage] }
 
-instance FromJSON StorageList where
-  parseJSON = withObject "StorageList" $ \v -> StorageList
+instance FromJSON StorageRList where
+  parseJSON = withObject "StorageRList" $ \v -> StorageRList
     <$> v .: "data"

@@ -1,11 +1,13 @@
 module Web.UPVE (login
-                , getVMList
-                , getStorageList
+                , getResourcesVM
+                , getResourcesStorage
+                , getVM
                 , changeStatus
                 ) where
 
 import                  Web.UPVE.Types
 import                  Web.UPVE.Internal
+import qualified        Web.UPVE.Resources            as R
 
 import Data.Time.Clock
 import Data.Time.Calendar
@@ -55,28 +57,40 @@ mkAuthCookie pve = do
                   }
   Just $ createCookieJar [tc]
 
+mkReq h p q = setRequestHost   h
+            $ setRequestPort   p
+            $ setRequestPath   q
+            $ setRequestMethod "GET"
+            $ setRequestSecure True
+            $ defaultRequest
+
 --
 -- Ressources
 --
 
 getRessources :: (FromJSON a, FromJSON b) => PVEServer -> String -> (a -> [b]) -> IO (Either JSONException [b])
 getRessources pve t u = do
-  let request = setRequestHost    (host pve)
-              $ setRequestPort    (port pve)
-              $ setRequestPath    (B.pack $ "/api2/json/cluster/resources?type=" ++ t)
-              $ setRequestMethod  "GET"
-              $ setRequestSecure  True
-              $ defaultRequest
+  let request = mkReq (host pve) (port pve) (B.pack $ "/api2/json/cluster/resources?type=" ++ t)
   response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
   case getResponseBody response of
     Left  err -> return $ Left err
     Right l   -> return $ Right (u l)
 
-getVMList :: PVEServer -> IO (Either JSONException [VM])
-getVMList pve = getRessources pve "vm" vml
+getResourcesVM :: PVEServer -> IO (Either JSONException [R.VM])
+getResourcesVM pve = getRessources pve "vm" vml
 
-getStorageList :: PVEServer -> IO (Either JSONException [Storage])
-getStorageList pve = getRessources pve "storage" sl
+getResourcesStorage :: PVEServer -> IO (Either JSONException [R.Storage])
+getResourcesStorage pve = getRessources pve "storage" sl
+
+--
+-- VM
+--
+
+getVM :: PVEServer -> String -> Int -> IO (Either JSONException VM)
+getVM pve node id = do
+  let request = mkReq (host pve) (port pve) (B.pack $ "/api2/json/nodes/" ++ node ++ "/qemu/" ++ (show id) ++ "/config")
+  response <- httpJSONEither (request {cookieJar = mkAuthCookie pve})
+  return $ getResponseBody response
 
 --
 -- Status

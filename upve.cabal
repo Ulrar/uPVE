@@ -14,7 +14,7 @@ extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Web.UPVE, Web.UPVE.Types
+  exposed-modules:     Web.UPVE, Web.UPVE.Types, Web.UPVE.Resources
   other-modules:       Web.UPVE.Internal
   default-extensions:  OverloadedStrings
   build-depends:       base >=4.8 && <4.9,
