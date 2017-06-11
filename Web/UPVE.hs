@@ -88,7 +88,7 @@ changeStatus pve id action = do
               $ setRequestPort    (port pve)
               $ setRequestPath    (B.pack ("/api2/json/nodes/s1/qemu/" ++ (show id) ++ "/status/" ++ (show action)))
               $ setRequestMethod  "POST"
-              $ setRequestHeader  "CSRFPreventionToken" [B.pack $ T.unpack $ token $ credentials pve]
+              $ setRequestHeader  "CSRFPreventionToken" [token $ credentials pve]
               $ setRequestSecure  True
               $ defaultRequest
   response <- httpLBS (request {cookieJar = mkAuthCookie pve})

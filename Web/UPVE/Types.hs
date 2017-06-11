@@ -7,18 +7,19 @@ module Web.UPVE.Types ( Credentials(..)
 
 import                  Data.Text
 import                  Data.Aeson
+import qualified        Data.ByteString.Char8         as B
 import qualified        Data.ByteString.Internal      as BI
 
 --
 -- Authentication
 --
 
-data Credentials = Credentials {ticket :: Text, token :: Text } deriving Show
+data Credentials = Credentials {ticket :: Text, token :: BI.ByteString } deriving Show
 
 instance FromJSON Credentials where
   parseJSON = withObject "Credentials" $ \b -> (b .: "data") >>= \v -> Credentials
     <$> v .: "ticket"
-    <*> v .: "CSRFPreventionToken"
+    <*> ((v .: "CSRFPreventionToken") >>= return . B.pack)
 
 data PVEServer = PVEServer {host :: BI.ByteString, port :: Int, credentials :: Credentials} deriving Show
 
