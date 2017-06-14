@@ -1,8 +1,12 @@
 module Web.UPVE.Types ( Credentials(..)
                       , PVEServer(..)
                       , VM(..)
+                      , Disk(..)
+                      , DiskType(..)
                       , Action(..)
                       ) where
+
+import                  Web.UPVE.Disks
 
 import                  Data.Text
 import                  Data.Aeson
@@ -33,6 +37,7 @@ data VM = VM { vmName     :: Text
              , vmNuma     :: Int
              , vmOSType   :: Text
              , vmSockets  :: Int
+             , vmDisks    :: [Disk]
              } deriving Show
 
 instance FromJSON VM where
@@ -44,6 +49,7 @@ instance FromJSON VM where
     <*> v .: "numa"
     <*> v .: "ostype"
     <*> v .: "sockets"
+    <*> (return $ findDisks v)
 
 --
 -- Misc
